@@ -6,6 +6,22 @@
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy import signals
+from House.user_agents import USER_AGENTS
+
+class RandomUserAgent(object):
+    """
+    随机请求头
+    """
+    def __init__(self):
+        self.agents = USER_AGENTS
+
+    def process_request(self, request, spider):
+        # 随机获取请求头
+        # referer = request.url
+        # if referer:
+        #     request.headers["referer"] = referer
+        request.headers.setdefault('User-Agent', random.choice(self.agents))
+
 
 
 class HouseSpiderMiddleware(object):

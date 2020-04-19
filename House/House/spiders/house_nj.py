@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 import scrapy
 
-from House.items import XiaoquItem
+from House.items import XiaoquItem, SecondHouseItem, ChengJiao
 
 
 class HouseNjSpider(scrapy.Spider):
     name = 'house_nj'
     allowed_domains = ['lianjia.com']
-    url_second_hosuse = 'https://nj.lianjia.com/xiaoqu/'
+    url_second_hosuse = 'https://nj.lianjia.com/xiaoqu/?from=rec'
     local_url = 'https://nj.lianjia.com'
     start_urls = 'https://nj.lianjia.com/xiaoqu/'
 
@@ -34,7 +34,7 @@ class HouseNjSpider(scrapy.Spider):
             area_url = ''.join([self.local_url, area.xpath('./@href').extract_first()])
             area_name = area.xpath('./@title')
             headers = self.headers
-            headers['Referer'] = 'https://nj.lianjia.com/xiaoqu/'
+            headers['Referer'] = 'https://nj.lianjia.com/xiaoqu/?from=rec'
             yield scrapy.Request(
                 url=area_url,
                 headers=headers,
@@ -104,9 +104,48 @@ class HouseNjSpider(scrapy.Spider):
                 item_key = xiaoquInfo_dict[xiaoquInfoLabel]
                 print(item_key)
                 item[item_key] = xiaoquInfoContent
-        xiaoqu_info_path = r'E:\SpiderUtils\xiaoqu\xiaoqu.txt'
-        print('item', item)
-        with open(xiaoqu_info_path, 'a+', encoding='utf-8')as f:
-            f.write(str(item)+',')
+        # xiaoqu_info_path = r'E:\SpiderUtils\xiaoqu\xiaoqu.txt'
+        # print('item', item)
+        # with open(xiaoqu_info_path, 'a+', encoding='utf-8')as f:
+        #     f.write(str(item)+',')
         yield item
 
+        house_second_url = response.xpath('//div[@class="goodSellHeader clear"]//a/@href').extract_first()  # 当前地区在售二手房
+        house_second_url = response.urljoin(house_second_url)
+        chengjiao_url = response.xpath('//div[@class="frameDeal"]/a/@href').extract_first()
+        for url in [house_second_url, chengjiao_url]:
+            yield scrapy.Request(url=url, callback=self.second_chengjiao, meta={'xiaoqu_name': xiaoqu_name})
+
+    def second_chengjiao(self, response):
+        xiaoqu_name = response.meta['xiaoqu_name']
+        url = response.url
+        if 'chengjiao' in url:
+            li_list = response.xpath('//ul[@class="listContent"]/li')
+        else:
+            li_list = response.xpath('//ul[@class="sellListContent"]/li')
+        for li in li_list:
+            info_name = li_list.xpath('.//div[@class="title"]/a/text()').extract_first()
+            info_href = li_list.xpath('.//div[@class="title"]/a/@href').extract_first()
+            yield scrapy.Request(info_href, callback=self.house_info, meta={'xiaoqu_name': xiaoqu_name, 'info_name': info_name, 'info_href': info_href})
+
+    def house_info(self, response):
+        """
+        二手房信息
+        :param response:
+        :return:
+        """
+        second_house_item = SecondHouseItem()
+        xiaoqu_name = response.meta['xiaoqu_name']
+        info_href = response.meta['info_href']
+        info_name = response.meta['info_name']
+
+    def chengjiao_info(self, response):
+        """
+        成交数据
+        :param response:
+        :return:
+        """
+        chengjiao_item = ChengJiao()
+        xiaoqu_name = response.meta['xiaoqu_name']
+        info_href = response.meta['info_href']
+        info_name = response.meta['info_name']

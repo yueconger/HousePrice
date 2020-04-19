@@ -35,3 +35,18 @@ class XiaoquItem(scrapy.Item):
     build_count = scrapy.Field()  # 栋数
     house_total = scrapy.Field()  # 房屋总数
     nearby_store = scrapy.Field()  # 附件门店
+
+
+class SecondHouseItem(scrapy.item):
+    """二手房信息"""
+    pass
+
+
+class ChengJiao(scrapy.item):
+    """成交记录"""
+    pass
+
+
+class ImageItem(scrapy.item):
+    # 图片保存
+    pass
